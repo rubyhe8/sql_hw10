@@ -1,0 +1,284 @@
+---
+title: "Session 10 In Class Practice Session - OMOP Exploration"
+subtitle: "Relational Databases and SQL Programming | Spring 2026"
+author: "Zoe Verzani"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## Load Packages
+```{r}
+library(CDMConnector)
+library(DBI)
+library(duckdb)
+
+library(tidyverse)
+library(gtsummary)
+theme_gtsummary_compact()
+library(readxl)
+library(ggplot2)
+library(survival)
+library(ggsurvfit)
+library(labelled)
+
+# usethis::edit_r_environ()
+# add this - EUNOMIA_DATA_FOLDER="my/data/path" - SAVE IT 
+# Restart R — Session → Restart R in RStudio
+```
+
+## Synthea Databases 
+
+We will be using a dataset provided by [Synthea](https://synthetichealth.github.io/synthea/) — an open-source, synthetic patient generator that models the medical history of synthetic patients. Synthea produces realistic but entirely fictional patient records, covering demographics, encounters, diagnoses, medications, procedures, and more, without any risk of exposing real patient data.
+
+The dataset has been mapped to the OMOP Common Data Model [(CDM)](https://ohdsi.github.io/CommonDataModel/cdm53.html), a standardized structure maintained by the OHDSI community that enables consistent analysis across different healthcare databases. This allows us to apply the same analytical code regardless of the underlying data source.
+
+```{r}
+exampleDatasets()
+```
+
+## COVID-19 Database 
+
+```{r}
+covid_df = DBI::dbConnect(duckdb::duckdb(),
+                          eunomiaDir("synthea-covid19-200k"))
+
+dbListTables(covid_df)
+```
+
+## Part 1 - Data Exploration
+
+### Persons Table 
+
+The person table is the foundation of every OMOP database, containing one row per unique patient. It stores core demographic attributes like birth date, gender, race, and ethnicity.
+
+```{r patient table head}
+dbGetQuery(covid_df, 
+           "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+
+#### Question 1) 
+
+How many patients are in the database?
+
+```{r q1 patient count}
+query1 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE")
+
+query1
+```
+
+#### Question 2)
+
+Create a demographics table displaying the birth date, gender, race, and ethnicity of each patient,
+
+```{r q2 demo query}
+query2 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE")
+query2 %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+```{r demo table}
+demo_table = query2 %>% 
+  mutate(
+    gender = case_when(
+    gender == "F"  ~ "Female",
+    gender == "M" ~ "Male",
+    TRUE ~ gender),
+    race = str_to_title(race),
+    ethnicity = str_to_title(ethnicity)) %>%
+tbl_summary(
+  include = -person_id,
+  label = list(
+    gender = "Gender",
+    birth_datetime = "Birthdate",
+    race = "Race",
+    ethnicity = "Ethnicity")) %>% 
+  bold_labels()
+
+demo_table
+```
+
+### Concept Table 
+
+The concept table is the vocabulary backbone of the entire OMOP Common Data Model. Rather than storing clinical terms as free text (e.g., "Inpatient Visit", "COVID-19"), OMOP stores integer IDs — called concept IDs — in every clinical table. The concept table is what translates those integers into meaningful information.
+
+```{r concept table head}
+dbGetQuery(covid_df, 
+          "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+Key columns in the concept table:
+
+* concept_id — the unique integer identifier (this is what clinical tables store)
+* concept_name — the human-readable label (e.g., "Type 2 diabetes mellitus")
+* domain_id — what kind of thing it is: "Condition", "Drug", "Visit", "Measurement", etc.
+
+```{r domains}
+domains = dbGetQuery(covid_df, 
+          "SELECT DISTINCT(domain_id) AS domain_id
+           FROM concept;")
+
+as.list(domains)
+```
+* vocabulary_id — which coding system it came from (e.g., SNOMED, RxNorm, ICD10CM)
+
+```{r vocabulary}
+vocabulary = dbGetQuery(covid_df, 
+          "SELECT DISTINCT(vocabulary_id) AS vocabulary_id
+           FROM concept;")
+
+as.list(vocabulary)
+```
+* concept_class_id — a finer classification within the vocabulary
+* standard_concept — whether this concept is the standardized version ("S") or a source mapping
+
+### Death Table 
+
+The death table records the date and optional cause of death for patients who have died, with at most one row per person. 
+
+```{r death table head}
+dbGetQuery(covid_df, 
+          "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+#### Question 3) 
+
+How many patients died in the database?
+
+```{r q3 death count}
+query3 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE")
+
+query3
+```
+
+#### Question 4)
+
+What were the most common causes of death among deceased patients?
+
+```{r q4 cause of death}
+query4 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE") 
+
+query4 %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+```{r cause of death table}
+death_table = query4 %>% 
+  tbl_summary(
+    include = -person_id,
+    label = list(
+      cause_of_death = "Cause of Death"),
+    sort = list(cause_of_death ~ "frequency")) %>% 
+    bold_labels()
+
+death_table
+```
+
+### Visit Occurrence Table
+
+The visit occurrence table captures every encounter a patient has had with the healthcare system, such as inpatient admissions, outpatient appointments, and emergency visits. Each row represents a single visit with a start and end date, a visit type.
+
+```{r visit table head}
+dbGetQuery(covid_df, 
+           "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+#### Question 5)
+
+How many encounter (visit_count) took place for each visit type, how many unique patients (patient_count) have had each visit type, and what is the average visit length (avg_visit_length), minimum and maximum visit length, for each visit type?
+
+```{r q5 visit types}
+query5 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE")
+
+
+rmarkdown::paged_table(query5)
+```
+
+### Drug Exposure 
+
+The drug exposure table captures every instance of a patient being exposed to a drug — this includes prescriptions written, prescriptions dispensed, and drugs administered directly by a provider. Each row represents one drug exposure event for one patient.
+
+```{r drug table head}
+dbGetQuery(covid_df, 
+           "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+#### Question 6) 
+
+How many patients have a recorded Influenza vaccine? 
+
+* concept_name = 'Influenza, seasonal, injectable, preservative free'
+* domain_id = 'Drug'
+
+```{r q6 influenza}
+query6 = dbGetQuery(covid_df,
+           "ENTER QUERY HERE")
+
+query6 
+```
+
+
+### Condition Occurence
+
+The condition occurrence table records every diagnosis, sign, or symptom that has been documented for a patient — whether observed by a provider, coded from a clinical note, or reported by the patient themselves. It is one of the most frequently used tables in OMOP and serves as the primary source for defining inclusion criteria, identifying comorbidities, and capturing outcomes in observational research.
+
+
+```{r condition table head}
+dbGetQuery(covid_df, 
+           "ENTER QUERY HERE") %>% 
+  rmarkdown::paged_table()
+```
+
+#### Question 7)
+
+At any given visit, a patient can have multiple conditions recorded simultaneously. For example, during a single inpatient admission a patient might have a headache, a history of diabetes, and a COVID-19 infection all coded as separate condition entries linked to the same visit_occurrence_id.
+
+Using the condition_occurrence table, count the number of conditions recorded at each visit. Then use DENSE_RANK() to rank each visit from the most conditions recorded to the least.
+
+```{r q7 condition rank}
+query7 = dbGetQuery(covid_df, 
+                    "ENTER QUERY HERE")
+
+query7 %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+#### Question 8)
+
+8) What were the conditions recorded at the 1st ranked visits. You can hard code the visit_occurrence_id.
+
+```{r q8 explore conditions}
+query8 = dbGetQuery(covid_df, 
+                   "ENTER QUERY HERE")
+                   
+
+query8 %>% 
+  rmarkdown::paged_table()
+```
+
