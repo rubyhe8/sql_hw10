@@ -73,12 +73,13 @@ demo %>%
 covid_entry = dbGetQuery(covid_df, 
                         "SELECT c.person_id, 
                         c_condition_occurrence.concept_name AS condition_name,
-                        c.condition_start_date AS first_covid_dx
+                        MIN(c.condition_start_date) AS first_covid_dx
                         FROM condition_occurrence AS c
                         INNER JOIN concept AS c_condition_occurrence
                           ON c.condition_concept_id = c_condition_occurrence.concept_id
                         WHERE c_condition_occurrence.domain_id = 'Condition' AND 
-                          c_condition_occurrence.concept_name = 'COVID-19';")
+                          c_condition_occurrence.concept_name = 'COVID-19'
+                        GROUP BY c.person_id, condition_name;")
 
 covid_entry %>% 
   head() %>% 
@@ -117,20 +118,34 @@ cohort = dbGetQuery(covid_df,
       (
         SELECT c.person_id, 
           c_condition_occurrence.concept_name AS condition_name,
-          c.condition_start_date AS first_covid_dx
+          MIN(c.condition_start_date) AS first_covid_dx
         FROM condition_occurrence AS c
         INNER JOIN concept AS c_condition_occurrence
           ON c.condition_concept_id = c_condition_occurrence.concept_id
         WHERE c_condition_occurrence.domain_id = 'Condition' AND
               c_condition_occurrence.concept_name = 'COVID-19'
+        GROUP BY c.person_id, condition_name
       ),
     death_dates AS 
       (
         SELECT person_id, death_date
         FROM death
       )
+    
       
-    ENTER MAIN QUERY HERE")
+    SELECT demo.person_id, demo.gender, demo.race, demo.ethnicity,
+    DATEDIFF('year', demo.birth_datetime, covid.first_covid_dx) AS age_at_covid_dx,
+    covid.first_covid_dx, death.death_date,
+    DATEDIFF('day', covid.first_covid_dx, death.death_date) AS days_covid_to_death,
+    CASE WHEN death.death_date IS NOT NULL THEN 1 
+              ELSE 0 END AS death_yn
+    FROM demographics AS demo
+    INNER JOIN covid_dx AS covid
+      ON demo.person_id = covid.person_id
+    LEFT JOIN death_dates AS death
+      ON covid.person_id = death.person_id
+    WHERE DATEDIFF('year', demo.birth_datetime, covid.first_covid_dx) >= 65
+     AND ((death.death_date >= covid.first_covid_dx) OR (death.death_date IS NULL));")
 
 cohort %>% 
   head() %>% 
