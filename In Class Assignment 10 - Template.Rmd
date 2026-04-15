@@ -1,0 +1,160 @@
+---
+title: "In Class Assignment 10 - Building a Research Cohort"
+subtitle: "Relational Databases and SQL Programming | Spring 2026"
+author: "Student Name"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 3
+    theme: flatly
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## Load Packages
+```{r}
+library(CDMConnector)
+library(DBI)
+library(duckdb)
+
+library(tidyverse)
+library(gtsummary)
+theme_gtsummary_compact()
+library(readxl)
+library(ggplot2)
+library(survival)
+library(ggsurvfit)
+library(labelled)
+```
+
+### Connect to Database
+
+```{r}
+covid_df = DBI::dbConnect(duckdb::duckdb(),
+                          eunomiaDir("synthea-covid19-200k"))
+
+dbListTables(covid_df)
+```
+
+### Step 1 - Patient Demographics
+
+*For all patients in the database, retrieve their demographic information including birth date, gender, race, and ethnicity.*
+
+```{r}
+demo = dbGetQuery(covid_df, 
+                  "ENTER QUERY HERE")
+
+demo %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+### Step 2 - COVID-19 Inclusion Criteria
+
+*Identify all patients with a diagnosis of COVID-19. For each patient identify their first diagnosis date*
+
+* domain_id = 'Condition'
+* concept_name = 'COVID-19'
+
+```{r}
+covid_entry = dbGetQuery(covid_df, 
+                        "ENTER QUERY HERE")
+
+covid_entry %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+### Step 3 - Death Outcome 
+
+*Identify all patients who have died. For each patient identify their death date.*
+
+```{r}
+death_outcome = dbGetQuery(covid_df, 
+                          "ENTER QUERY HERE")
+
+death_outcome %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+
+### Final Cohort 
+
+```{r}
+cohort = dbGetQuery(covid_df,
+                         
+  "WITH demographics AS 
+      (
+        STEP 1 QUERY
+      ),
+    covid_dx AS 
+      (
+        STEP 2 QUERY
+      ),
+    death_dates AS 
+      (
+        STEP 3 QUERY
+      )
+      
+    ENTER MAIN QUERY HERE")
+
+cohort %>% 
+  head() %>% 
+  rmarkdown::paged_table()
+```
+
+### Cohort Summary Table 
+
+```{r}
+cohort = cohort %>% 
+  mutate(
+    gender = case_when(
+      gender == "M" ~ "Male",
+      gender == "F" ~ "Female",
+      TRUE ~ gender),
+    race = str_to_title(race),
+    ethnicity = str_to_title(ethnicity)) %>% 
+  set_variable_labels(
+    death_yn = "Death",
+    age_at_covid_dx = "Age",
+    gender = "Gender",
+    race = "Race",
+    ethnicity = "Ethnicity",
+    days_covid_to_death = "Time to Death")
+
+cohort %>% 
+  select(age_at_covid_dx, gender, race, ethnicity,
+         death_yn, days_covid_to_death) %>% 
+  tbl_summary(
+    by = death_yn,
+    type = list(age_at_covid_dx    ~ "continuous2",
+                days_covid_to_death ~ "continuous2"),
+    statistic = list(all_continuous2() ~ c("{mean} ({sd})",
+                                           "{median} ({p25}, {p75})",
+                                           "{min}, {max}"))) %>% 
+  bold_labels() 
+```
+
+### Survival Plot
+
+```{r}
+cohort %>% 
+  mutate(
+    time_30  = pmin(days_covid_to_death, 30, na.rm = TRUE),
+    event_30 = ifelse(death_yn == 1 & days_covid_to_death <= 30, 1, 0)) %>% 
+  survfit2(Surv(time_30, event_30) ~ gender, data = .) %>%
+  ggsurvfit() +
+  add_confidence_interval() 
+```
+
+
+

@@ -2,3 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
+
+# Ignore the DuckDB database files
+*.duckdb
+*.duckdb.wal
+*.sqlite
+
+
+my/

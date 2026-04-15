@@ -24,7 +24,6 @@ knitr::opts_chunk$set(
 library(CDMConnector)
 library(DBI)
 library(duckdb)
-
 library(tidyverse)
 library(gtsummary)
 theme_gtsummary_compact()
@@ -55,7 +54,7 @@ exampleDatasets()
 covid_df = DBI::dbConnect(duckdb::duckdb(),
                           eunomiaDir("synthea-covid19-200k"))
 
-dbListTables(covid_df)
+#dbListTables(covid_df)
 ```
 
 ## Part 1 - Data Exploration
@@ -66,7 +65,9 @@ The person table is the foundation of every OMOP database, containing one row pe
 
 ```{r patient table head}
 dbGetQuery(covid_df, 
-           "ENTER QUERY HERE") %>% 
+           "SELECT *
+           FROM person
+           LIMIT 100;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -77,7 +78,8 @@ How many patients are in the database?
 
 ```{r q1 patient count}
 query1 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE")
+                    "SELECT COUNT(*) AS pat_count
+                    FROM person;")
 
 query1
 ```
@@ -88,7 +90,10 @@ Create a demographics table displaying the birth date, gender, race, and ethnici
 
 ```{r q2 demo query}
 query2 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE")
+                    "SELECT person_id, birth_datetime, 
+                    gender_source_value AS gender, race_source_value AS race,
+                    ethnicity_source_value AS ethnicity
+                    FROM person;")
 query2 %>% 
   head() %>% 
   rmarkdown::paged_table()
@@ -121,7 +126,9 @@ The concept table is the vocabulary backbone of the entire OMOP Common Data Mode
 
 ```{r concept table head}
 dbGetQuery(covid_df, 
-          "ENTER QUERY HERE") %>% 
+          "SELECT *
+          FROM concept
+          LIMIT 100;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -156,7 +163,9 @@ The death table records the date and optional cause of death for patients who ha
 
 ```{r death table head}
 dbGetQuery(covid_df, 
-          "ENTER QUERY HERE") %>% 
+          "SELECT *
+          FROM death
+          LIMIT 100;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -166,7 +175,8 @@ How many patients died in the database?
 
 ```{r q3 death count}
 query3 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE")
+                    "SELECT COUNT(*) AS per_count
+                    FROM death")
 
 query3
 ```
@@ -177,7 +187,10 @@ What were the most common causes of death among deceased patients?
 
 ```{r q4 cause of death}
 query4 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE") 
+                    "SELECT d.person_id, d.cause_concept_id, c.concept_name AS cause_of_death
+                    FROM death AS d
+                    INNER JOIN concept AS c
+                      ON d.cause_concept_id = c.concept_id;") 
 
 query4 %>% 
   head() %>% 
@@ -187,7 +200,7 @@ query4 %>%
 ```{r cause of death table}
 death_table = query4 %>% 
   tbl_summary(
-    include = -person_id,
+    include = -c(person_id, cause_concept_id),
     label = list(
       cause_of_death = "Cause of Death"),
     sort = list(cause_of_death ~ "frequency")) %>% 
@@ -202,7 +215,9 @@ The visit occurrence table captures every encounter a patient has had with the h
 
 ```{r visit table head}
 dbGetQuery(covid_df, 
-           "ENTER QUERY HERE") %>% 
+           "SELECT *
+           FROM visit_occurrence
+           LIMIT 10;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -210,9 +225,19 @@ dbGetQuery(covid_df,
 
 How many encounter (visit_count) took place for each visit type, how many unique patients (patient_count) have had each visit type, and what is the average visit length (avg_visit_length), minimum and maximum visit length, for each visit type?
 
+
 ```{r q5 visit types}
 query5 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE")
+                    "SELECT c_visit_type.concept_name AS visit_type,
+                    COUNT(v.visit_occurrence_id) AS visit_count, 
+                    COUNT(DISTINCT v.person_id) AS patient_count,
+                    AVG(DATEDIFF('day', v.visit_start_date, v.visit_end_date)) AS avg_visit_length,
+                    MIN(DATEDIFF('day', v.visit_start_date, v.visit_end_date)) AS min_visit_length, 
+                    MAX(DATEDIFF('day', v.visit_start_date, v.visit_end_date)) AS max_visit_length
+                    FROM visit_occurrence AS v
+                    INNER JOIN concept AS c_visit_type
+                      ON v.visit_concept_id = c_visit_type.concept_id
+                    GROUP BY visit_type;")
 
 
 rmarkdown::paged_table(query5)
@@ -224,7 +249,9 @@ The drug exposure table captures every instance of a patient being exposed to a 
 
 ```{r drug table head}
 dbGetQuery(covid_df, 
-           "ENTER QUERY HERE") %>% 
+           "SELECT *
+           FROM drug_exposure
+           LIMIT 10;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -237,7 +264,12 @@ How many patients have a recorded Influenza vaccine?
 
 ```{r q6 influenza}
 query6 = dbGetQuery(covid_df,
-           "ENTER QUERY HERE")
+           "SELECT COUNT(DISTINCT d.person_id) AS person_count
+           FROM drug_exposure AS d
+           INNER JOIN concept AS c_drug
+            ON d.drug_concept_id = c_drug.concept_id
+          WHERE c_drug.concept_name = 'Influenza, seasonal, injectable, preservative free' AND
+            c_drug.domain_id = 'Drug';")
 
 query6 
 ```
@@ -250,7 +282,8 @@ The condition occurrence table records every diagnosis, sign, or symptom that ha
 
 ```{r condition table head}
 dbGetQuery(covid_df, 
-           "ENTER QUERY HERE") %>% 
+           "SELECT *
+           FROM condition_occurrence;") %>% 
   rmarkdown::paged_table()
 ```
 
@@ -262,7 +295,18 @@ Using the condition_occurrence table, count the number of conditions recorded at
 
 ```{r q7 condition rank}
 query7 = dbGetQuery(covid_df, 
-                    "ENTER QUERY HERE")
+                    "
+                    WITH visit_counts AS
+                      (SELECT visit_occurrence_id, person_id, 
+                      COUNT(condition_occurrence_id) AS condition_count
+                      FROM condition_occurrence
+                      GROUP BY visit_occurrence_id, person_id
+                      ORDER BY condition_count DESC)
+                      
+                      SELECT visit_occurrence_id, person_id, condition_count,
+                      DENSE_RANK() OVER(ORDER BY condition_count DESC) AS visit_rank
+                      FROM visit_counts;
+                    ")
 
 query7 %>% 
   head() %>% 
@@ -275,7 +319,12 @@ query7 %>%
 
 ```{r q8 explore conditions}
 query8 = dbGetQuery(covid_df, 
-                   "ENTER QUERY HERE")
+                   "SELECT visit_occurrence_id, c.person_id, c.condition_concept_id,
+                   c_condition.concept_name AS diagnosis
+                   FROM condition_occurrence AS c
+                   INNER JOIN concept AS c_condition
+                    ON c.condition_concept_id = c_condition.concept_id
+                   WHERE visit_occurrence_id = 1304452;")
                    
 
 query8 %>% 
