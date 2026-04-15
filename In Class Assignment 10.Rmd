@@ -1,7 +1,7 @@
 ---
 title: "In Class Assignment 10 - Building a Research Cohort"
 subtitle: "Relational Databases and SQL Programming | Spring 2026"
-author: "Student Name"
+author: "Ruby He"
 output: 
   html_document:
     toc: true
@@ -50,7 +50,12 @@ dbListTables(covid_df)
 
 ```{r}
 demo = dbGetQuery(covid_df, 
-                  "ENTER QUERY HERE")
+                  "SELECT person_id, 
+                    birth_datetime, 
+                    gender_source_value AS gender, 
+                    race_source_value AS race,
+                    ethnicity_source_value AS ethnicity
+                    FROM person;")
 
 demo %>% 
   head() %>% 
@@ -66,7 +71,14 @@ demo %>%
 
 ```{r}
 covid_entry = dbGetQuery(covid_df, 
-                        "ENTER QUERY HERE")
+                        "SELECT c.person_id, 
+                        c_condition_occurrence.concept_name AS condition_name,
+                        c.condition_start_date AS first_covid_dx
+                        FROM condition_occurrence AS c
+                        INNER JOIN concept AS c_condition_occurrence
+                          ON c.condition_concept_id = c_condition_occurrence.concept_id
+                        WHERE c_condition_occurrence.domain_id = 'Condition' AND 
+                          c_condition_occurrence.concept_name = 'COVID-19';")
 
 covid_entry %>% 
   head() %>% 
@@ -79,7 +91,8 @@ covid_entry %>%
 
 ```{r}
 death_outcome = dbGetQuery(covid_df, 
-                          "ENTER QUERY HERE")
+                          "SELECT person_id, death_date
+                          FROM death;")
 
 death_outcome %>% 
   head() %>% 
@@ -94,15 +107,27 @@ cohort = dbGetQuery(covid_df,
                          
   "WITH demographics AS 
       (
-        STEP 1 QUERY
+        SELECT person_id, birth_datetime, 
+        gender_source_value AS gender, 
+        race_source_value AS race, 
+        ethnicity_source_value AS ethnicity
+        FROM person
       ),
     covid_dx AS 
       (
-        STEP 2 QUERY
+        SELECT c.person_id, 
+          c_condition_occurrence.concept_name AS condition_name,
+          c.condition_start_date AS first_covid_dx
+        FROM condition_occurrence AS c
+        INNER JOIN concept AS c_condition_occurrence
+          ON c.condition_concept_id = c_condition_occurrence.concept_id
+        WHERE c_condition_occurrence.domain_id = 'Condition' AND
+              c_condition_occurrence.concept_name = 'COVID-19'
       ),
     death_dates AS 
       (
-        STEP 3 QUERY
+        SELECT person_id, death_date
+        FROM death
       )
       
     ENTER MAIN QUERY HERE")
