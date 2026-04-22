@@ -79,7 +79,7 @@ covid_entry = dbGetQuery(covid_df,
                           ON c.condition_concept_id = c_condition_occurrence.concept_id
                         WHERE c_condition_occurrence.domain_id = 'Condition' AND 
                           c_condition_occurrence.concept_name = 'COVID-19'
-                        GROUP BY c.person_id, condition_name;")
+                        GROUP BY c.person_id, c_condition_occurrence.concept_name;")
 
 covid_entry %>% 
   head() %>% 
@@ -113,6 +113,9 @@ cohort = dbGetQuery(covid_df,
         race_source_value AS race, 
         ethnicity_source_value AS ethnicity
         FROM person
+        WHERE gender_source_value IS NOT NULL
+        AND race_source_value IS NOT NULL
+        AND ethnicity_source_value IS NOT NULL
       ),
     covid_dx AS 
       (
@@ -124,7 +127,7 @@ cohort = dbGetQuery(covid_df,
           ON c.condition_concept_id = c_condition_occurrence.concept_id
         WHERE c_condition_occurrence.domain_id = 'Condition' AND
               c_condition_occurrence.concept_name = 'COVID-19'
-        GROUP BY c.person_id, condition_name
+        GROUP BY c.person_id, c_condition_occurrence.concept_name
       ),
     death_dates AS 
       (
@@ -136,9 +139,9 @@ cohort = dbGetQuery(covid_df,
     SELECT demo.person_id, demo.gender, demo.race, demo.ethnicity,
     DATEDIFF('year', demo.birth_datetime, covid.first_covid_dx) AS age_at_covid_dx,
     covid.first_covid_dx, death.death_date,
-    DATEDIFF('day', covid.first_covid_dx, death.death_date) AS days_covid_to_death,
     CASE WHEN death.death_date IS NOT NULL THEN 1 
-              ELSE 0 END AS death_yn
+              ELSE 0 END AS death_yn,
+    DATEDIFF('day', covid.first_covid_dx, death.death_date) AS days_covid_to_death
     FROM demographics AS demo
     INNER JOIN covid_dx AS covid
       ON demo.person_id = covid.person_id

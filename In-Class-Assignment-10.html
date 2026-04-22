@@ -2920,14 +2920,14 @@ patient identify their first diagnosis date</em></p>
 <span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="st">                          ON c.condition_concept_id = c_condition_occurrence.concept_id</span></span>
 <span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="st">                        WHERE c_condition_occurrence.domain_id = &#39;Condition&#39; AND </span></span>
 <span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a><span class="st">                          c_condition_occurrence.concept_name = &#39;COVID-19&#39;</span></span>
-<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="st">                        GROUP BY c.person_id, condition_name;&quot;</span>)</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a><span class="st">                        GROUP BY c.person_id, c_condition_occurrence.concept_name;&quot;</span>)</span>
 <span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a></span>
 <span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a>covid_entry <span class="sc">%&gt;%</span> </span>
 <span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">%&gt;%</span> </span>
 <span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code></pre></div>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["person_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["condition_name"],"name":[2],"type":["chr"],"align":["left"]},{"label":["first_covid_dx"],"name":[3],"type":["date"],"align":["right"]}],"data":[{"1":"136503","2":"COVID-19","3":"2020-10-27","_rn_":"1"},{"1":"136574","2":"COVID-19","3":"2020-07-30","_rn_":"2"},{"1":"136718","2":"COVID-19","3":"2020-12-13","_rn_":"3"},{"1":"136923","2":"COVID-19","3":"2020-12-29","_rn_":"4"},{"1":"137301","2":"COVID-19","3":"2021-02-11","_rn_":"5"},{"1":"137349","2":"COVID-19","3":"2020-07-22","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["person_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["condition_name"],"name":[2],"type":["chr"],"align":["left"]},{"label":["first_covid_dx"],"name":[3],"type":["date"],"align":["right"]}],"data":[{"1":"136407","2":"COVID-19","3":"2020-11-16","_rn_":"1"},{"1":"136455","2":"COVID-19","3":"2020-09-28","_rn_":"2"},{"1":"136542","2":"COVID-19","3":"2020-06-29","_rn_":"3"},{"1":"136742","2":"COVID-19","3":"2020-12-11","_rn_":"4"},{"1":"136777","2":"COVID-19","3":"2020-12-10","_rn_":"5"},{"1":"136874","2":"COVID-19","3":"2021-08-01","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
@@ -2959,46 +2959,49 @@ their death date.</em></p>
 <span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a><span class="st">        race_source_value AS race, </span></span>
 <span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a><span class="st">        ethnicity_source_value AS ethnicity</span></span>
 <span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a><span class="st">        FROM person</span></span>
-<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="st">      ),</span></span>
-<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="st">    covid_dx AS </span></span>
-<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="st">      (</span></span>
-<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="st">        SELECT c.person_id, </span></span>
-<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="st">          c_condition_occurrence.concept_name AS condition_name,</span></span>
-<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="st">          MIN(c.condition_start_date) AS first_covid_dx</span></span>
-<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="st">        FROM condition_occurrence AS c</span></span>
-<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="st">        INNER JOIN concept AS c_condition_occurrence</span></span>
-<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="st">          ON c.condition_concept_id = c_condition_occurrence.concept_id</span></span>
-<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="st">        WHERE c_condition_occurrence.domain_id = &#39;Condition&#39; AND</span></span>
-<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="st">              c_condition_occurrence.concept_name = &#39;COVID-19&#39;</span></span>
-<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="st">        GROUP BY c.person_id, condition_name</span></span>
-<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="st">      ),</span></span>
-<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="st">    death_dates AS </span></span>
-<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="st">      (</span></span>
-<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="st">        SELECT person_id, death_date</span></span>
-<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="st">        FROM death</span></span>
-<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="st">      )</span></span>
-<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="st">    </span></span>
-<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="st">      </span></span>
-<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="st">    SELECT demo.person_id, demo.gender, demo.race, demo.ethnicity,</span></span>
-<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="st">    DATEDIFF(&#39;year&#39;, demo.birth_datetime, covid.first_covid_dx) AS age_at_covid_dx,</span></span>
-<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="st">    covid.first_covid_dx, death.death_date,</span></span>
-<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="st">    DATEDIFF(&#39;day&#39;, covid.first_covid_dx, death.death_date) AS days_covid_to_death,</span></span>
-<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="st">    CASE WHEN death.death_date IS NOT NULL THEN 1 </span></span>
-<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="st">              ELSE 0 END AS death_yn</span></span>
-<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="st">    FROM demographics AS demo</span></span>
-<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a><span class="st">    INNER JOIN covid_dx AS covid</span></span>
-<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a><span class="st">      ON demo.person_id = covid.person_id</span></span>
-<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a><span class="st">    LEFT JOIN death_dates AS death</span></span>
-<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a><span class="st">      ON covid.person_id = death.person_id</span></span>
-<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a><span class="st">    WHERE DATEDIFF(&#39;year&#39;, demo.birth_datetime, covid.first_covid_dx) &gt;= 65</span></span>
-<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a><span class="st">     AND ((death.death_date &gt;= covid.first_covid_dx) OR (death.death_date IS NULL));&quot;</span>)</span>
-<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a></span>
-<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a>cohort <span class="sc">%&gt;%</span> </span>
-<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">%&gt;%</span> </span>
-<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code></pre></div>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a><span class="st">        WHERE gender_source_value IS NOT NULL</span></span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a><span class="st">        AND race_source_value IS NOT NULL</span></span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a><span class="st">        AND ethnicity_source_value IS NOT NULL</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a><span class="st">      ),</span></span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="st">    covid_dx AS </span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="st">      (</span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="st">        SELECT c.person_id, </span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="st">          c_condition_occurrence.concept_name AS condition_name,</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="st">          MIN(c.condition_start_date) AS first_covid_dx</span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="st">        FROM condition_occurrence AS c</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="st">        INNER JOIN concept AS c_condition_occurrence</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a><span class="st">          ON c.condition_concept_id = c_condition_occurrence.concept_id</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a><span class="st">        WHERE c_condition_occurrence.domain_id = &#39;Condition&#39; AND</span></span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a><span class="st">              c_condition_occurrence.concept_name = &#39;COVID-19&#39;</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a><span class="st">        GROUP BY c.person_id, c_condition_occurrence.concept_name</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a><span class="st">      ),</span></span>
+<span id="cb7-26"><a href="#cb7-26" tabindex="-1"></a><span class="st">    death_dates AS </span></span>
+<span id="cb7-27"><a href="#cb7-27" tabindex="-1"></a><span class="st">      (</span></span>
+<span id="cb7-28"><a href="#cb7-28" tabindex="-1"></a><span class="st">        SELECT person_id, death_date</span></span>
+<span id="cb7-29"><a href="#cb7-29" tabindex="-1"></a><span class="st">        FROM death</span></span>
+<span id="cb7-30"><a href="#cb7-30" tabindex="-1"></a><span class="st">      )</span></span>
+<span id="cb7-31"><a href="#cb7-31" tabindex="-1"></a><span class="st">    </span></span>
+<span id="cb7-32"><a href="#cb7-32" tabindex="-1"></a><span class="st">      </span></span>
+<span id="cb7-33"><a href="#cb7-33" tabindex="-1"></a><span class="st">    SELECT demo.person_id, demo.gender, demo.race, demo.ethnicity,</span></span>
+<span id="cb7-34"><a href="#cb7-34" tabindex="-1"></a><span class="st">    DATEDIFF(&#39;year&#39;, demo.birth_datetime, covid.first_covid_dx) AS age_at_covid_dx,</span></span>
+<span id="cb7-35"><a href="#cb7-35" tabindex="-1"></a><span class="st">    covid.first_covid_dx, death.death_date,</span></span>
+<span id="cb7-36"><a href="#cb7-36" tabindex="-1"></a><span class="st">    CASE WHEN death.death_date IS NOT NULL THEN 1 </span></span>
+<span id="cb7-37"><a href="#cb7-37" tabindex="-1"></a><span class="st">              ELSE 0 END AS death_yn,</span></span>
+<span id="cb7-38"><a href="#cb7-38" tabindex="-1"></a><span class="st">    DATEDIFF(&#39;day&#39;, covid.first_covid_dx, death.death_date) AS days_covid_to_death</span></span>
+<span id="cb7-39"><a href="#cb7-39" tabindex="-1"></a><span class="st">    FROM demographics AS demo</span></span>
+<span id="cb7-40"><a href="#cb7-40" tabindex="-1"></a><span class="st">    INNER JOIN covid_dx AS covid</span></span>
+<span id="cb7-41"><a href="#cb7-41" tabindex="-1"></a><span class="st">      ON demo.person_id = covid.person_id</span></span>
+<span id="cb7-42"><a href="#cb7-42" tabindex="-1"></a><span class="st">    LEFT JOIN death_dates AS death</span></span>
+<span id="cb7-43"><a href="#cb7-43" tabindex="-1"></a><span class="st">      ON covid.person_id = death.person_id</span></span>
+<span id="cb7-44"><a href="#cb7-44" tabindex="-1"></a><span class="st">    WHERE DATEDIFF(&#39;year&#39;, demo.birth_datetime, covid.first_covid_dx) &gt;= 65</span></span>
+<span id="cb7-45"><a href="#cb7-45" tabindex="-1"></a><span class="st">     AND ((death.death_date &gt;= covid.first_covid_dx) OR (death.death_date IS NULL));&quot;</span>)</span>
+<span id="cb7-46"><a href="#cb7-46" tabindex="-1"></a></span>
+<span id="cb7-47"><a href="#cb7-47" tabindex="-1"></a>cohort <span class="sc">%&gt;%</span> </span>
+<span id="cb7-48"><a href="#cb7-48" tabindex="-1"></a>  <span class="fu">head</span>() <span class="sc">%&gt;%</span> </span>
+<span id="cb7-49"><a href="#cb7-49" tabindex="-1"></a>  rmarkdown<span class="sc">::</span><span class="fu">paged_table</span>()</span></code></pre></div>
 <div data-pagedtable="false">
 <script data-pagedtable-source type="application/json">
-{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["person_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["gender"],"name":[2],"type":["chr"],"align":["left"]},{"label":["race"],"name":[3],"type":["chr"],"align":["left"]},{"label":["ethnicity"],"name":[4],"type":["chr"],"align":["left"]},{"label":["age_at_covid_dx"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["first_covid_dx"],"name":[6],"type":["date"],"align":["right"]},{"label":["death_date"],"name":[7],"type":["date"],"align":["right"]},{"label":["days_covid_to_death"],"name":[8],"type":["dbl"],"align":["right"]},{"label":["death_yn"],"name":[9],"type":["int"],"align":["right"]}],"data":[{"1":"123012","2":"M","3":"white","4":"nonhispanic","5":"83","6":"2020-12-13","7":"2021-01-07","8":"25","9":"1","_rn_":"1"},{"1":"123644","2":"F","3":"white","4":"nonhispanic","5":"87","6":"2021-05-13","7":"2021-06-05","8":"23","9":"1","_rn_":"2"},{"1":"123705","2":"M","3":"white","4":"hispanic","5":"87","6":"2021-01-04","7":"2021-01-24","8":"20","9":"1","_rn_":"3"},{"1":"123741","2":"F","3":"black","4":"hispanic","5":"90","6":"2020-11-23","7":"2020-12-09","8":"16","9":"1","_rn_":"4"},{"1":"123830","2":"M","3":"white","4":"nonhispanic","5":"89","6":"2021-02-07","7":"2021-03-07","8":"28","9":"1","_rn_":"5"},{"1":"123882","2":"F","3":"white","4":"nonhispanic","5":"72","6":"2020-08-24","7":"2020-09-24","8":"31","9":"1","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
+{"columns":[{"label":[""],"name":["_rn_"],"type":[""],"align":["left"]},{"label":["person_id"],"name":[1],"type":["int"],"align":["right"]},{"label":["gender"],"name":[2],"type":["chr"],"align":["left"]},{"label":["race"],"name":[3],"type":["chr"],"align":["left"]},{"label":["ethnicity"],"name":[4],"type":["chr"],"align":["left"]},{"label":["age_at_covid_dx"],"name":[5],"type":["dbl"],"align":["right"]},{"label":["first_covid_dx"],"name":[6],"type":["date"],"align":["right"]},{"label":["death_date"],"name":[7],"type":["date"],"align":["right"]},{"label":["death_yn"],"name":[8],"type":["int"],"align":["right"]},{"label":["days_covid_to_death"],"name":[9],"type":["dbl"],"align":["right"]}],"data":[{"1":"123012","2":"M","3":"white","4":"nonhispanic","5":"83","6":"2020-12-13","7":"2021-01-07","8":"1","9":"25","_rn_":"1"},{"1":"123644","2":"F","3":"white","4":"nonhispanic","5":"87","6":"2021-05-13","7":"2021-06-05","8":"1","9":"23","_rn_":"2"},{"1":"123705","2":"M","3":"white","4":"hispanic","5":"87","6":"2021-01-04","7":"2021-01-24","8":"1","9":"20","_rn_":"3"},{"1":"123741","2":"F","3":"black","4":"hispanic","5":"90","6":"2020-11-23","7":"2020-12-09","8":"1","9":"16","_rn_":"4"},{"1":"123830","2":"M","3":"white","4":"nonhispanic","5":"89","6":"2021-02-07","7":"2021-03-07","8":"1","9":"28","_rn_":"5"},{"1":"123882","2":"F","3":"white","4":"nonhispanic","5":"72","6":"2020-08-24","7":"2020-09-24","8":"1","9":"31","_rn_":"6"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
 </div>
@@ -3031,20 +3034,20 @@ their death date.</em></p>
 <span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a>                                           <span class="st">&quot;{median} ({p25}, {p75})&quot;</span>,</span>
 <span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a>                                           <span class="st">&quot;{min}, {max}&quot;</span>))) <span class="sc">%&gt;%</span> </span>
 <span id="cb8-27"><a href="#cb8-27" tabindex="-1"></a>  <span class="fu">bold_labels</span>() </span></code></pre></div>
-<div id="xgcgrgnjzm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#xgcgrgnjzm table {
+<div id="ghkpodkjnm" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ghkpodkjnm table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#xgcgrgnjzm thead, #xgcgrgnjzm tbody, #xgcgrgnjzm tfoot, #xgcgrgnjzm tr, #xgcgrgnjzm td, #xgcgrgnjzm th {
+#ghkpodkjnm thead, #ghkpodkjnm tbody, #ghkpodkjnm tfoot, #ghkpodkjnm tr, #ghkpodkjnm td, #ghkpodkjnm th {
 border-style: none;
 }
-#xgcgrgnjzm p {
+#ghkpodkjnm p {
 margin: 0;
 padding: 0;
 }
-#xgcgrgnjzm .gt_table {
+#ghkpodkjnm .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -3069,11 +3072,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_caption {
+#ghkpodkjnm .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#xgcgrgnjzm .gt_title {
+#ghkpodkjnm .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -3084,7 +3087,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#xgcgrgnjzm .gt_subtitle {
+#ghkpodkjnm .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -3095,7 +3098,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#xgcgrgnjzm .gt_heading {
+#ghkpodkjnm .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -3106,12 +3109,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_bottom_border {
+#ghkpodkjnm .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_col_headings {
+#ghkpodkjnm .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -3125,7 +3128,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_col_heading {
+#ghkpodkjnm .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3144,7 +3147,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#xgcgrgnjzm .gt_column_spanner_outer {
+#ghkpodkjnm .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3155,13 +3158,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#xgcgrgnjzm .gt_column_spanner_outer:first-child {
+#ghkpodkjnm .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#xgcgrgnjzm .gt_column_spanner_outer:last-child {
+#ghkpodkjnm .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#xgcgrgnjzm .gt_column_spanner {
+#ghkpodkjnm .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -3172,10 +3175,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#xgcgrgnjzm .gt_spanner_row {
+#ghkpodkjnm .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#xgcgrgnjzm .gt_group_heading {
+#ghkpodkjnm .gt_group_heading {
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
@@ -3200,7 +3203,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#xgcgrgnjzm .gt_empty_group_heading {
+#ghkpodkjnm .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -3214,13 +3217,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#xgcgrgnjzm .gt_from_md > :first-child {
+#ghkpodkjnm .gt_from_md > :first-child {
 margin-top: 0;
 }
-#xgcgrgnjzm .gt_from_md > :last-child {
+#ghkpodkjnm .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#xgcgrgnjzm .gt_row {
+#ghkpodkjnm .gt_row {
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
@@ -3238,7 +3241,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#xgcgrgnjzm .gt_stub {
+#ghkpodkjnm .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3250,7 +3253,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#xgcgrgnjzm .gt_stub_row_group {
+#ghkpodkjnm .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3263,13 +3266,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#xgcgrgnjzm .gt_row_group_first td {
+#ghkpodkjnm .gt_row_group_first td {
 border-top-width: 2px;
 }
-#xgcgrgnjzm .gt_row_group_first th {
+#ghkpodkjnm .gt_row_group_first th {
 border-top-width: 2px;
 }
-#xgcgrgnjzm .gt_summary_row {
+#ghkpodkjnm .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -3278,14 +3281,14 @@ padding-bottom: 1px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#xgcgrgnjzm .gt_first_summary_row {
+#ghkpodkjnm .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_first_summary_row.thick {
+#ghkpodkjnm .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#xgcgrgnjzm .gt_last_summary_row {
+#ghkpodkjnm .gt_last_summary_row {
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
@@ -3294,7 +3297,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_grand_summary_row {
+#ghkpodkjnm .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -3303,7 +3306,7 @@ padding-bottom: 1px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#xgcgrgnjzm .gt_first_grand_summary_row {
+#ghkpodkjnm .gt_first_grand_summary_row {
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
@@ -3312,7 +3315,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_last_grand_summary_row_top {
+#ghkpodkjnm .gt_last_grand_summary_row_top {
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
@@ -3321,10 +3324,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_striped {
+#ghkpodkjnm .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#xgcgrgnjzm .gt_table_body {
+#ghkpodkjnm .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -3332,7 +3335,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_footnotes {
+#ghkpodkjnm .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -3345,7 +3348,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_footnote {
+#ghkpodkjnm .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 1px;
@@ -3353,7 +3356,7 @@ padding-bottom: 1px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#xgcgrgnjzm .gt_sourcenotes {
+#ghkpodkjnm .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -3366,64 +3369,64 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#xgcgrgnjzm .gt_sourcenote {
+#ghkpodkjnm .gt_sourcenote {
 font-size: 90%;
 padding-top: 1px;
 padding-bottom: 1px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#xgcgrgnjzm .gt_left {
+#ghkpodkjnm .gt_left {
 text-align: left;
 }
-#xgcgrgnjzm .gt_center {
+#ghkpodkjnm .gt_center {
 text-align: center;
 }
-#xgcgrgnjzm .gt_right {
+#ghkpodkjnm .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#xgcgrgnjzm .gt_font_normal {
+#ghkpodkjnm .gt_font_normal {
 font-weight: normal;
 }
-#xgcgrgnjzm .gt_font_bold {
+#ghkpodkjnm .gt_font_bold {
 font-weight: bold;
 }
-#xgcgrgnjzm .gt_font_italic {
+#ghkpodkjnm .gt_font_italic {
 font-style: italic;
 }
-#xgcgrgnjzm .gt_super {
+#ghkpodkjnm .gt_super {
 font-size: 65%;
 }
-#xgcgrgnjzm .gt_footnote_marks {
+#ghkpodkjnm .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#xgcgrgnjzm .gt_asterisk {
+#ghkpodkjnm .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#xgcgrgnjzm .gt_indent_1 {
+#ghkpodkjnm .gt_indent_1 {
 text-indent: 5px;
 }
-#xgcgrgnjzm .gt_indent_2 {
+#ghkpodkjnm .gt_indent_2 {
 text-indent: 10px;
 }
-#xgcgrgnjzm .gt_indent_3 {
+#ghkpodkjnm .gt_indent_3 {
 text-indent: 15px;
 }
-#xgcgrgnjzm .gt_indent_4 {
+#ghkpodkjnm .gt_indent_4 {
 text-indent: 20px;
 }
-#xgcgrgnjzm .gt_indent_5 {
+#ghkpodkjnm .gt_indent_5 {
 text-indent: 25px;
 }
-#xgcgrgnjzm .katex-display {
+#ghkpodkjnm .katex-display {
 display: inline-flex !important;
 margin-bottom: 0.75em !important;
 }
-#xgcgrgnjzm div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ghkpodkjnm div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
 height: 0px !important;
 }
 </style>
